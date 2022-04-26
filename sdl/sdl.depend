@@ -1,4 +1,6 @@
 # depslib dependency file v1.0
-1650991508 source:c:\users\tuan\desktop\game\doodle-jump\sdl\main.cpp
-	<iostream>
+1650997678 source:c:\users\tuan\desktop\game\doodle-jump\sdl\main.cpp
+	<bits/stdc++.h>
+	<SDL.h>
+	<SDL_image.h>
 

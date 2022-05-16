@@ -1,6 +1,24 @@
 # depslib dependency file v1.0
-1652164940 source:c:\users\tuan\desktop\game\doodle-jump\sdl\main.cpp
+1652700081 source:c:\users\tuan\desktop\game\doodle-jump\sdl\main.cpp
+	"CommonFunc.h"
+	"baseObject.h"
+
+1652281915 source:c:\users\tuan\desktop\game\doodle-jump\sdl\textobject.cpp
+
+1652700000 source:c:\users\tuan\desktop\game\doodle-jump\sdl\baseobject.cpp
+	"baseObject.h"
+
+1652344285 source:c:\users\tuan\desktop\game\doodle-jump\sdl\commonfunc.cpp
+	"CommonFunc.h"
+
+1652698089 c:\users\tuan\desktop\game\doodle-jump\sdl\commonfunc.h
 	<bits/stdc++.h>
 	<SDL.h>
 	<SDL_image.h>
+	<SDL_ttf.h>
+
+1652282244 c:\users\tuan\desktop\game\doodle-jump\sdl\textobject.h
+
+1652700023 c:\users\tuan\desktop\game\doodle-jump\sdl\baseobject.h
+	"CommonFunc.h"
 

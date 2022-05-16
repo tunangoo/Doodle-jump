@@ -1,40 +1,50 @@
-#include<bits/stdc++.h>
-#include<SDL.h>
-#include<SDL_image.h>
 
-using namespace std;
+#include "CommonFunc.h"
+#include "baseObject.h"
 
-SDL_Window* window = NULL;
-SDL_Surface* ScreenSurface = NULL;
-SDL_Surface* background = NULL;
-SDL_Renderer* renderer;
+void initData()
+{
+	srand( time( NULL ) );
+	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+	{
+		printf("Unable to initialize SDL %s\n", SDL_GetError());
+		exit(0);
+	}
 
-const int SCREEN_WIDTH = 500;
-const int SCREEN_HEIGHT = 700;
-const int SCREEN_FPS = 60;
-const int DELAY_TIME = 1000 / SCREEN_FPS;
+	//Initialize the truetype font API.
+	if (TTF_Init() < 0)
+	{
+		SDL_Log("%s", TTF_GetError());
+		exit(0);
+	}
+    window = SDL_CreateWindow( "Doodle Jump", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+}
+
+long long Rand( long long l, long long r )
+{
+    return l + ((long long)rand() * (RAND_MAX + 1) * (RAND_MAX + 1) * (RAND_MAX + 1) +
+                (long long)rand() * (RAND_MAX + 1) * (RAND_MAX + 1) +
+                (long long)rand() * (RAND_MAX + 1) +
+                rand())%(r-l+1);
+}
+
 
 struct point{
-    int x, y;
+    double x, y;
     int type;
+    double movepf;
+    void gen(int l, int r)
+    {
+        x = Rand(0, SCREEN_WIDTH - PLAT_WIDTH);
+        y = Rand(l, r);
+        type = Rand(0, 1);
+        type = (type == 0) ? Rand(-1, 1) : 0;
+        movepf = (double)Rand(1, max_plat_move * 10) / 10;
+    }
 };
 
-SDL_Texture* loadTexture( string path, SDL_Renderer* renderer )
-{
-    SDL_Texture* newTexture = nullptr;
-    SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-    if ( loadedSurface == nullptr )
-        cout << "Unable to load image " << path << " SDL_image Error: "
-             << IMG_GetError() << endl;
-    else {
-        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
-        if( newTexture == nullptr )
-            cout << "Unable to create texture from " << path << " SDL Error: "
-                 << SDL_GetError() << endl;
-        SDL_FreeSurface( loadedSurface );
-    }
-    return newTexture;
-}
+
 
 void waitUntilKeyPressed()
 {
@@ -47,44 +57,26 @@ void waitUntilKeyPressed()
     }
 }
 
-void Render( SDL_Texture* t, int x, int y )
+
+
+void playgame()
 {
-    SDL_Rect tRect;
-    SDL_QueryTexture( t, NULL, NULL, &tRect.w, &tRect.h );
-    tRect.x = x;
-    tRect.y = y;
-    SDL_RenderCopy( renderer, t, NULL, &tRect );
-}
-int main( int argc, char* argv[] )
-{
-    srand( time( NULL ) );
-    window = SDL_CreateWindow( "Doodle game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED |
-                                              SDL_RENDERER_PRESENTVSYNC );
-
-    SDL_Texture* t1 = loadTexture( "images/background.jpg", renderer );
-    SDL_Texture* t2 = loadTexture( "images/platform.png", renderer );
-    SDL_Texture* t3 = loadTexture( "images/doodle_left.png", renderer );
-    SDL_Texture* t4 = loadTexture( "images/doodle_right.png", renderer );
-
-    point plat[20];
-
     //theo right direction trai cach 19, phai cach 27, do dai chan la 34;
-    int x = 100 , y = 100, h = 200, direction = 1;
-    float dx = 0, dy = 0;
-    int framestart, frametime;
-    int nplat = 14;
-    int Point = 0;
+    double dx = 0, dy = 0;
+    point plat[nplat];
+    int Score = 0, localplat = -1;
     bool quit = 0;
     SDL_Event e;
     for ( int i = 0; i < nplat; i++ )
     {
-        plat[i].x = rand() % ( SCREEN_WIDTH - 68 );
-        plat[i].y = rand() % SCREEN_HEIGHT / nplat + i * SCREEN_HEIGHT / nplat;
+        plat[i].gen( i * SCREEN_HEIGHT / nplat, ( i + 1 ) * SCREEN_HEIGHT / nplat );
     }
+    plat[nplat / 2].x = SCREEN_WIDTH / 2;
+    plat[nplat / 2].type = 0;
+    int x = plat[nplat / 2].x , y = plat[nplat / 2].y - 100, h = 200, direction = 1;
     while (!quit)
     {
-        int framestart = SDL_GetTicks();
+        framestart = SDL_GetTicks();
         while( SDL_PollEvent( &e ) != 0 )
         {
             if ( e.type == SDL_QUIT )
@@ -93,16 +85,16 @@ int main( int argc, char* argv[] )
             }
             if ( e.key.keysym.sym == SDLK_RIGHT )
             {
-                x += 5;
+                x += distance_move;
                 if( direction == 0 )
                 {
                     x += 8;
                 }
                 direction = 1;
             }
-            if ( e.key.keysym.sym == SDLK_LEFT )
+            else if ( e.key.keysym.sym == SDLK_LEFT )
             {
-                x -= 5;
+                x -= distance_move;
                 if( direction == 1 )
                 {
                     x -= 8;
@@ -137,41 +129,80 @@ int main( int argc, char* argv[] )
             leftfoot = x + 19;
             rightfoot = leftfoot + 34;
         }
+
+        for( int i = 0; i < nplat; i++ )
+            plat[i].y += speed;
+        y += speed;
+
         dy += 0.2;
         y += dy;
         //if ( y > 670 )  dy = -10;
+
+
+        for( int i = 0; i < nplat; i++ )
+        {
+            plat[i].x += plat[i].type * plat[i].movepf;
+            if(plat[i].x + PLAT_WIDTH > SCREEN_WIDTH)
+            {
+                plat[i].x = SCREEN_WIDTH * 2 - (plat[i].x + PLAT_WIDTH) - PLAT_WIDTH;
+                plat[i].type *= -1;
+            }
+            else if(plat[i].x < 0)
+            {
+                plat[i].x *= -1;
+                plat[i].type *= -1;
+            }
+        }
 
         if ( y < h )
             for ( int i = 0; i < nplat; i++ )
             {
                 y = h;
                 plat[i].y = plat[i].y - dy;
-                if (plat[i].y > SCREEN_HEIGHT)
+                if ( plat[i].y > SCREEN_HEIGHT )
                 {
-                    plat[i].y = 0;
-                    plat[i].x = rand() % ( SCREEN_WIDTH - 68 );
+                    plat[i].gen( -20, 0 );
                 }
             }
 
         for ( int i = 0; i < nplat; i++ )
-            if ( ( rightfoot > plat[i].x ) && ( leftfoot < plat[i].x + 68 )
-                    && ( y + 70 > plat[i].y ) && ( y + 70 < plat[i].y + 14 ) && ( dy > 0 ) )  dy = -10;
+            if ( ( rightfoot > plat[i].x ) && ( leftfoot < plat[i].x + PLAT_WIDTH )
+                    && ( y + 70 > plat[i].y ) && ( y + 70 < plat[i].y + PLAT_HEIGHT ) && ( dy > 0 ) )
+                    {
+                        dy = -10;
+                        if(localplat != i)
+                        {
+                            Score++;
+                            localplat = i;
+                        }
+                    }
 
-        Render( t1, 0, 0 );
+        Render( background, 0, 0, renderer );
 
         for ( int i = 0; i < nplat; i++ )
         {
-            Render( t2, plat[i].x, plat[i].y );
+            Render( platform, plat[i].x, plat[i].y, renderer );
         }
 
         if ( !direction )
         {
-            Render( t3, x, y );
+            Render( doodle_left, x, y, renderer );
         }
         else
         {
-            Render( t4, x, y );
+            Render( doodle_right, x, y, renderer );
         }
+        stringstream ss;
+        ss << Score;
+        string textpoint = "Score: " + ss.str();
+        Render( loadTexture( DrawText( textpoint, YELLOW_COLOR, "RobotoCondensed-BoldItalic.ttf", 30 ), renderer ), 190, 0, renderer );
+
+		if(y > SCREEN_HEIGHT - 70)
+        {
+            highScore = max(highScore, Score);
+            return;
+        }
+
         SDL_RenderPresent( renderer );
 
         frametime = SDL_GetTicks() - framestart;
@@ -179,13 +210,19 @@ int main( int argc, char* argv[] )
 		{
 			SDL_Delay(DELAY_TIME - frametime);
 		}
-		if(y > SCREEN_HEIGHT)
-        {
-            cout << "game over!";
-            return 0;
-        }
-
     }
+}
+
+int main( int argc, char* argv[] )
+{
+    initData();
+
+    background = loadTexture( loadIMG( "images/background.jpg" ), renderer );
+    platform = loadTexture( loadIMG( "images/platform.png" ), renderer );
+    doodle_left = loadTexture( loadIMG( "images/doodle_left.png" ), renderer );
+    doodle_right = loadTexture( loadIMG( "images/doodle_right.png" ), renderer );
+
+    playgame();
 
     waitUntilKeyPressed();
 

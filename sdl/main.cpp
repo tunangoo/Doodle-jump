@@ -218,7 +218,7 @@ void playgame()
         {
             highScore = max(highScore, Score);
             Mix_HaltChannel( 0 );
-            //return;
+            return;
         }
 
         SDL_RenderPresent( renderer );

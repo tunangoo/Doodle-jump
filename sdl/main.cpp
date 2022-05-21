@@ -17,6 +17,12 @@ void initData()
 		SDL_Log("%s", TTF_GetError());
 		exit(0);
 	}
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1)
+    {
+        printf("%s", Mix_GetError());
+    }
+
     window = SDL_CreateWindow( "Doodle Jump", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
     renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 }
@@ -32,7 +38,8 @@ long long Rand( long long l, long long r )
 
 struct point{
     double x, y;
-    int type;
+    int type, touch;
+    string color;
     double movepf;
     void gen(int l, int r)
     {
@@ -40,7 +47,10 @@ struct point{
         y = Rand(l, r);
         type = Rand(0, 1);
         type = (type == 0) ? Rand(-1, 1) : 0;
+        int cl = Rand(0, 2);
+        if(cl == 0) color = "blue"; else color = "green";
         movepf = (double)Rand(1, max_plat_move * 10) / 10;
+        touch = 0;
     }
 };
 
@@ -61,6 +71,8 @@ void waitUntilKeyPressed()
 
 void playgame()
 {
+    Mix_PlayChannel( 0, lofi, -1 );
+
     //theo right direction trai cach 19, phai cach 27, do dai chan la 34;
     double dx = 0, dy = 0;
     point plat[nplat];
@@ -166,14 +178,17 @@ void playgame()
             }
 
         for ( int i = 0; i < nplat; i++ )
+        if( plat[i].color == "green" || plat[i].touch == 0 )
             if ( ( rightfoot > plat[i].x ) && ( leftfoot < plat[i].x + PLAT_WIDTH )
                     && ( y + 70 > plat[i].y ) && ( y + 70 < plat[i].y + PLAT_HEIGHT ) && ( dy > 0 ) )
                     {
                         dy = -10;
-                        if(localplat != i)
+                        if( localplat != i )
                         {
+                            if( plat[i].color == "blue" ) plat[i].touch = 1;
                             Score++;
                             localplat = i;
+                            Mix_PlayChannel( -1, jump_effect, 0 );
                         }
                     }
 
@@ -181,7 +196,9 @@ void playgame()
 
         for ( int i = 0; i < nplat; i++ )
         {
-            Render( platform, plat[i].x, plat[i].y, renderer );
+            if( plat[i].color == "blue" && plat[i].touch < 2 ) Render( blue_platform, plat[i].x, plat[i].y, renderer );
+            else if(plat[i].color == "green") Render( green_platform, plat[i].x, plat[i].y, renderer );
+            if(plat[i].touch == 1) plat[i].touch++;
         }
 
         if ( !direction )
@@ -200,7 +217,8 @@ void playgame()
 		if(y > SCREEN_HEIGHT - 70)
         {
             highScore = max(highScore, Score);
-            return;
+            Mix_HaltChannel( 0 );
+            //return;
         }
 
         SDL_RenderPresent( renderer );
@@ -218,11 +236,30 @@ int main( int argc, char* argv[] )
     initData();
 
     background = loadTexture( loadIMG( "images/background.jpg" ), renderer );
-    platform = loadTexture( loadIMG( "images/platform.png" ), renderer );
+    green_platform = loadTexture( loadIMG( "images/greenplatform.png" ), renderer );
+    blue_platform = loadTexture( loadIMG( "images/blueplatform.png" ), renderer );
     doodle_left = loadTexture( loadIMG( "images/doodle_left.png" ), renderer );
     doodle_right = loadTexture( loadIMG( "images/doodle_right.png" ), renderer );
+    play_game_red = loadTexture( DrawText( "Play", RED_COLOR, "RobotoCondensed-BoldItalic.ttf", size_menu), renderer );
+    play_game_yellow = loadTexture( DrawText( "Play", YELLOW_COLOR, "RobotoCondensed-BoldItalic.ttf", size_menu), renderer );
+    exit_game_red = loadTexture( DrawText( "Exit", RED_COLOR, "RobotoCondensed-BoldItalic.ttf", size_menu), renderer );
+    exit_game_yellow = loadTexture( DrawText( "Exit", YELLOW_COLOR, "RobotoCondensed-BoldItalic.ttf", size_menu), renderer );
+
+    jump_effect = Mix_LoadWAV( "sounds/jump.wav" );
+    lofi = Mix_LoadWAV( "sounds/lofi.wav" );
 
     playgame();
+
+
+	Mix_CloseAudio();
+	//Destroy a window.
+	SDL_DestroyWindow(window);
+
+	//Destroy a renderer
+	SDL_DestroyRenderer(renderer);
+
+	//cleans up all initialized subsystems
+	SDL_Quit();
 
     waitUntilKeyPressed();
 

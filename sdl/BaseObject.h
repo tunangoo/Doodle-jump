@@ -6,6 +6,7 @@
 SDL_Surface* loadIMG( string path );
 SDL_Surface* DrawText( string text, SDL_Color color, const char *font, int textsize );
 SDL_Texture* loadTexture( SDL_Surface* loadedSurface, SDL_Renderer* renderer );
+void getRect( SDL_Texture* t, SDL_Rect& tRect, int x, int y );
 void Render( SDL_Texture* t, int x, int y, SDL_Renderer* renderer );
-
+void waitUntilKeyPressed();
 #endif // BASE_OBJECT_H_

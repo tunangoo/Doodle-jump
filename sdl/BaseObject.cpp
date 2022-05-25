@@ -29,11 +29,27 @@ SDL_Texture* loadTexture( SDL_Surface* loadedSurface, SDL_Renderer* renderer )
     return newTexture;
 }
 
-void Render( SDL_Texture* t, int x, int y, SDL_Renderer* renderer )
+void getRect( SDL_Texture* t, SDL_Rect& tRect, int x, int y)
 {
-    SDL_Rect tRect;
     SDL_QueryTexture( t, NULL, NULL, &tRect.w, &tRect.h );
     tRect.x = x;
     tRect.y = y;
+}
+
+void Render( SDL_Texture* t, int x, int y, SDL_Renderer* renderer )
+{
+    SDL_Rect tRect;
+    getRect( t, tRect, x, y );
     SDL_RenderCopy( renderer, t, NULL, &tRect );
+}
+
+void waitUntilKeyPressed()
+{
+    SDL_Event e;
+    while (true) {
+        if ( SDL_WaitEvent(&e) != 0 &&
+             (e.type == SDL_KEYDOWN || e.type == SDL_QUIT) )
+            return;
+        SDL_Delay( 100 );
+    }
 }

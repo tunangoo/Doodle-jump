@@ -20,6 +20,7 @@ const SDL_Color YELLOW_COLOR = {255, 255, 0};
 const SDL_Color GREEN_COLOR = {0, 128, 0};
 const SDL_Color BLACK_COLOR = {0, 0, 0};
 
+static SDL_Texture* background_menu = NULL;
 static SDL_Texture* background = NULL;
 static SDL_Texture* green_platform = NULL;
 static SDL_Texture* blue_platform = NULL;
@@ -28,10 +29,11 @@ static SDL_Texture* doodle_right = NULL;
 static SDL_Event e;
 
 static Mix_Chunk* jump_effect = NULL;
-static Mix_Chunk* lofi = NULL;
 static Mix_Chunk* mouse_click = NULL;
-static Mix_Chunk* music = NULL;
-static Mix_Chunk* music2 = NULL;
+static Mix_Chunk* sound1 = NULL;
+static Mix_Chunk* sound2 = NULL;
+static Mix_Chunk* sound3 = NULL;
+static Mix_Chunk* lose = NULL;
 
 TTF_Font* TTF_OpenFont(const char *file, int ptsize);
 const int SCREEN_WIDTH = 500;

@@ -42,6 +42,29 @@ const int SCREEN_FPS = 60;
 const int DELAY_TIME = 1000 / SCREEN_FPS;
 const int PLAT_WIDTH = 68;
 const int PLAT_HEIGHT = 14;
+
+struct icon{
+    SDL_Rect rect;
+    SDL_Texture* red;
+    SDL_Texture* yellow;
+    bool is_select, is_click;
+    int type;
+};
+
+struct platform{
+    double x, y;
+    int type, touch;
+    string color;
+    double movepf;
+};
+
+const int max_plat_move = 4;
+const int n_plat = 10, h = 200;
+const double speed = 1, distance_move = 4;
+static double x, y, acc_y;
 static bool quit = false;
+static platform plat[n_plat];
+static int high_score = 0, score, direction;
+static int frame_start, frame_time;
 
 #endif // COMMON_FUNCTION_H_

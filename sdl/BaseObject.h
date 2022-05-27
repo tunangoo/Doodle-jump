@@ -11,4 +11,5 @@ void Render( SDL_Texture* t, int x, int y, SDL_Renderer* renderer );
 void WaitUntilKeyPressed();
 void RenderRectangle( SDL_Rect rect, int r, int g, int b, SDL_Renderer* renderer );
 void RectangleOutline( SDL_Rect rect, int r, int g, int b, SDL_Renderer* renderer );
+
 #endif // BASE_OBJECT_H_

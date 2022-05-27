@@ -1,121 +1,23 @@
 
 #include "CommonFunc.h"
-#include "baseObject.h"
-
-void initData()
-{
-	srand( time( NULL ) );
-	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-	{
-		printf("Unable to initialize SDL %s\n", SDL_GetError());
-		exit(0);
-	}
-
-	//Initialize the truetype font API.
-	if (TTF_Init() < 0)
-	{
-		SDL_Log("%s", TTF_GetError());
-		exit(0);
-	}
-
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1)
-    {
-        printf("%s", Mix_GetError());
-    }
-
-    window = SDL_CreateWindow( "Doodle Jump", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
-}
-
-
-
-long long Rand( long long l, long long r )
-{
-    return l + ((long long)rand() * (RAND_MAX + 1) * (RAND_MAX + 1) * (RAND_MAX + 1) +
-                (long long)rand() * (RAND_MAX + 1) * (RAND_MAX + 1) +
-                (long long)rand() * (RAND_MAX + 1) +
-                rand())%(r-l+1);
-}
-
-string IntToString( int x )
-{
-    stringstream s;
-    s << x;
-    return s.str();
-}
-
-struct icon{
-    SDL_Rect rect;
-    SDL_Texture* red;
-    SDL_Texture* yellow;
-    bool is_choose, is_click;
-} a[4];
-
-void InitIcon( icon& a, int x, int y, string title, int sizez )
-{
-    a.is_choose = a.is_click = false;
-    a.red = LoadTexture( DrawText( title, RED_COLOR, "Roboto-Bold.ttf", sizez ), renderer );
-    a.yellow = LoadTexture( DrawText( title, YELLOW_COLOR, "Roboto-Bold.ttf", sizez), renderer );
-    GetRect( a.yellow, a.rect, x, y );
-}
-
-bool MouseSelect( int x, int y, SDL_Rect t )
-{
-    if(x >= t.x && y >= t.y && x <= t.x + t.w && y <= t.y + t.h) return 1;
-    return 0;
-}
-
-void MouseMotion(int l, int r)
-{
-    while( SDL_PollEvent( &e ) != 0 )
-    {
-        switch( e.type )
-        {
-        case SDL_QUIT:
-            quit = true;
-            return;
-        break;
-        case SDL_MOUSEMOTION:
-            {
-                int x = e.motion.x;
-                int y = e.motion.y;
-                for( int i = l; i < l + r; i++ )
-                if( MouseSelect( x, y, a[i].rect ) )
-                    a[i].is_choose = true;
-                else a[i].is_choose = false;
-            }
-        break;
-        case SDL_MOUSEBUTTONDOWN:
-            {
-                int x = e.motion.x;
-                int y = e.motion.y;
-                for( int i = l; i < l + r; i++ )
-                if( MouseSelect( x, y, a[i].rect ) )
-                    a[i].is_click = true;
-                else a[i].is_click = false;
-            }
-        break;
-        default:
-        break;
-        }
-    }
-}
+#include "BaseObject.h"
+#include "MainObject.h"
 
 int SetMenu()
 {
-    int l = 0, r = 2;
     Mix_PlayChannel( 0, sound1, -1 );
 
-    InitIcon( a[0], 40, 200, "Play Game", 60 );
-    InitIcon( a[1], 40, 300, "Exit", 60 );
+    int n = 2;
+    icon a[n];
+    InitIcon( a[0], 40, 200, "Play Game", 60, 1, renderer );
+    InitIcon( a[1], 40, 300, "Exit", 60, 1, renderer );
 
     while(true)
     {
-        MouseMotion( 0, 2 );
-
+        MouseMotion( a, 2, quit );
         Render( background_menu, 0, 0, renderer );
-        for( int i = l; i < l + r; i++ )
-        if( a[i].is_choose == true )
+        for( int i = 0; i < n; i++ )
+        if( a[i].is_select == true )
         {
             Render( a[i].red, a[i].rect.x, a[i].rect.y, renderer );
             if( a[i].is_click == true )
@@ -133,84 +35,18 @@ int SetMenu()
     return 1;
 }
 
-const int n_plat = 10, size_menu = 70, h = 200, max_plat_move = 4;
-int high_score = 0, score, current_plat, direction;
-int frame_start, frame_time;
-double speed = 0.5, distance_move = 8, acc_y;
-int x, y;
-string key;
-
-struct point{
-    double x, y;
-    int type, touch;
-    string color;
-    double movepf;
-    void gen(int l, int r)
-    {
-        x = Rand(0, SCREEN_WIDTH - PLAT_WIDTH);
-        y = Rand(l, r);
-        type = Rand(0, 1);
-        type = (type == 0) ? Rand(-1, 1) : 0;
-        int cl = Rand(0, 2);
-        if(cl == 0) color = "blue"; else color = "green";
-        movepf = (double)Rand(1, max_plat_move * 10) / 10;
-        touch = 0;
-    }
-} plat[n_plat];
-
-void HandleInputAction()
-{
-    if(e.type == SDL_KEYDOWN)
-    {
-        if ( e.key.keysym.sym == SDLK_RIGHT )
-        {
-            key = "right";
-        }
-        else if ( e.key.keysym.sym == SDLK_LEFT )
-        {
-            key = "left";
-        }
-    }
-    else if(e.type == SDL_KEYUP)
-    {
-        if ( e.key.keysym.sym == SDLK_RIGHT )
-        {
-            key = "none";
-        }
-        else if ( e.key.keysym.sym == SDLK_LEFT )
-        {
-            key = "none";
-        }
-    }
-    if(key == "left")
-    {
-        x -= distance_move;
-        if( direction == 1 )
-        {
-            x -= 8;
-        }
-        direction = 0;
-    }
-    else if(key == "right")
-    {
-        x += distance_move;
-        if( direction == 0 )
-        {
-            x += 8;
-        }
-        direction = 1;
-    }
-}
-
 void PlayGame()
 {
     Mix_PlayChannel( 0, sound2, -1 );
 
-    acc_y = 0; score = 0; current_plat = -1;
-    quit = false;
-    for ( int i = 0; i < n_plat; i++ )
+    string key;
+
+    int current_plat = -1;
+    acc_y = 0; score = 0;
+
+    for( int i = 0; i < n_plat; i++ )
     {
-        plat[i].gen( i * SCREEN_HEIGHT / n_plat, ( i + 1 ) * SCREEN_HEIGHT / n_plat );
+        GenPlatform( plat[i], i * SCREEN_HEIGHT / n_plat, ( i + 1 ) * SCREEN_HEIGHT / n_plat );
     }
     plat[n_plat / 2].x = SCREEN_WIDTH / 2;
     plat[n_plat / 2].type = 0;
@@ -220,13 +56,24 @@ void PlayGame()
     while (!quit)
     {
         frame_start = SDL_GetTicks();
-        while( SDL_PollEvent( &e ) != 0 )
+        HandleInputAction( e, key, quit );
+        if(key == "left")
         {
-            if ( e.type == SDL_QUIT )
+            x -= distance_move;
+            if( direction == 1 )
             {
-                quit = true;
+                x -= 8;
             }
-            else HandleInputAction();
+            direction = 0;
+        }
+        else if(key == "right")
+        {
+            x += distance_move;
+            if( direction == 0 )
+            {
+                x += 8;
+            }
+            direction = 1;
         }
         int left_foot, right_foot;
         if( direction == 0 )
@@ -288,7 +135,7 @@ void PlayGame()
                 plat[i].y = plat[i].y - acc_y;
                 if ( plat[i].y > SCREEN_HEIGHT )
                 {
-                    plat[i].gen( -20, 0 );
+                    GenPlatform(plat[i], -20, 0 );
                 }
             }
         }
@@ -348,16 +195,16 @@ void PlayGame()
 
 int GameOver()
 {
-    InitIcon( a[2], 140, 390, "Play again", 45 );
-    InitIcon( a[3], 190, 450, "Home", 45 );
-
-    int l = 2, r = 2;
+    int n = 2;
+    icon a[n];
+    InitIcon( a[0], 140, 390, "Play again", 45, 1, renderer );
+    InitIcon( a[1], 190, 450, "Home", 45, 1, renderer );
 
     Mix_PlayChannel( 0, sound3, -1 );
 
     while(!quit)
     {
-        MouseMotion(l, r);
+        MouseMotion(a, n, quit);
 
         Render( background, 0, 0, renderer );
         for ( int i = 0; i < n_plat; i++ )
@@ -384,8 +231,8 @@ int GameOver()
         Render( LoadTexture( DrawText( "Your high score: " + IntToString( high_score ), YELLOW_COLOR, "Roboto-BoldItalic.ttf", 30), renderer), 120, 280, renderer );
         Render( LoadTexture( DrawText( "Your score: " + IntToString( score ), YELLOW_COLOR, "Roboto-BoldItalic.ttf", 30), renderer), 150, 320, renderer );
 
-        for( int i = l; i < l + r; i++ )
-        if( a[i].is_choose == true )
+        for( int i = 0; i < n; i++ )
+        if( a[i].is_select == true )
         {
             Render( a[i].red, a[i].rect.x, a[i].rect.y, renderer );
             if( a[i].is_click == true )
@@ -406,7 +253,7 @@ int GameOver()
 
 int main( int argc, char* argv[] )
 {
-    initData();
+    InitData( window, renderer );
 
     background_menu = LoadTexture( LoadIMG( "images/background_menu.jpg" ), renderer );
     background = LoadTexture( LoadIMG( "images/background.jpg" ), renderer );
@@ -422,29 +269,18 @@ int main( int argc, char* argv[] )
     sound3 = Mix_LoadWAV( "sounds/sound3.wav" );
     lose = Mix_LoadWAV( "sounds/lose.wav" );
 
-    int tt = 1;
+    int status = 1;
     while( !quit )
     {
-        if( tt == 1 ) quit = SetMenu();
+        if( status == 1 ) quit = SetMenu();
         if( !quit )
         {
             PlayGame();
-            tt = GameOver() - 2;
+            status = GameOver();
         }
     }
 
-	Mix_CloseAudio();
-
-	//Destroy a window.
-	SDL_DestroyWindow( window );
-
-	//Destroy a renderer
-	SDL_DestroyRenderer( renderer );
-
-	//cleans up all initialized subsystems
-	SDL_Quit();
-
-    //waitUntilKeyPressed();
+	ClearData( window, renderer );
 
     return 0;
 }
